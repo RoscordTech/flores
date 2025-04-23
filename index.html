@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lluvia de Rosas con Giroscopio</title>
+
+    <style>
+        /* --- Estilos Generales --- */
+        body {
+            margin: 0;
+            overflow: hidden; /* Oculta las barras de desplazamiento */
+            background-color: #fdd; /* Fondo suave, como un pétalo */
+            position: relative; /* Necesario para posicionar hijos absolutos */
+            height: 100vh; /* Ocupa toda la altura de la ventana */
+            width: 100vw; /* Ocupa todo el ancho de la ventana */
+            font-family: sans-serif; /* Para el texto del botón de permiso */
+        }
+
+        /* --- Contenedor de la Lluvia --- */
+        .rain-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Permite hacer clic a través de las rosas */
+            z-index: 1; /* Por debajo de la rosa grande y el botón de permiso */
+        }
+
+        /* --- Estilo Individual de Cada Rosa que Cae --- */
+        .rain-rose {
+            position: absolute;
+            width: 30px; /* Tamaño base de las rosas que caen */
+            height: 30px;
+            background-image: url('https://www.svgrepo.com/show/398231/rose.svg'); /* URL de la imagen de la rosa */
+            background-size: contain;
+            background-repeat: no-repeat;
+            top: -10%; /* Empieza por encima de la pantalla */
+            opacity: 0.8; /* Un poco de transparencia */
+
+            /* Variables CSS para controlar la traslación (JS) y rotación (CSS Animación) */
+            --gyro-translate-x: 0; /* Controlado por JavaScript (giroscopio) */
+            --fall-rotate: 0deg; /* Controlado por la animación CSS @keyframes fall */
+
+            /* Combina la traslación horizontal (JS) y la rotación/posición vertical (CSS Animation) */
+            /* La animación 'fall' animará 'top', 'opacity', y '--fall-rotate' */
+            /* El JavaScript modificará '--gyro-translate-x' */
+            transform: translateX(var(--gyro-translate-x, 0)) rotate(var(--fall-rotate, 0deg));
+
+            /* La animación de caída se ejecuta una vez y mantiene el estado final (acumulación) */
+            animation: fall linear forwards;
+            /* NOTA: La duración y el retraso de la animación 'fall' se definen por rosa más abajo */
+        }
+
+        /* --- Animación de Caída (@keyframes) --- */
+        @keyframes fall {
+            0% {
+                top: -10%;
+                opacity: 0.8;
+                --fall-rotate: 0deg; /* Inicio de la rotación */
+            }
+            100% {
+                top: 100%; /* Llega al final de la pantalla */
+                opacity: 0.8; /* Mantiene la opacidad al acumularse */
+                --fall-rotate: 360deg; /* Rotación completa al caer */
+            }
+        }
+
+        /* --- Variaciones para la Lluvia (Duración, Retraso, Tamaño, Opacidad) --- */
+        /* Estas reglas usan :nth-child para aplicar diferentes propiedades a diferentes grupos de rosas */
+        /* Ajusta o añade más reglas según la cantidad de divs .rain-rose que uses */
+        .rain-rose:nth-child(3n+1) { animation-duration: 7s; animation-delay: 1s; width: 25px; height: 25px; opacity: 0.7; }
+        .rain-rose:nth-child(5n+2) { animation-duration: 9s; animation-delay: 2s; opacity: 0.6; }
+        .rain-rose:nth-child(7n+3) { animation-duration: 6s; animation-delay: 0.5s; width: 35px; height: 35px; opacity: 0.9; }
+        .rain-rose:nth-child(11n+4) { animation-duration: 8s; animation-delay: 3s; opacity: 0.85; }
+        .rain-rose:nth-child(13n+5) { animation-duration: 7.5s; animation-delay: 1.5s; width: 28px; height: 28px; }
+        .rain-rose:nth-child(17n+6) { animation-duration: 9.5s; animation-delay: 4s; opacity: 0.75; }
+        .rain-rose:nth-child(19n+7) { animation-duration: 6.5s; animation-delay: 2.5s; }
+        .rain-rose:nth-child(23n+8) { animation-duration: 8.5s; animation-delay: 0s; width: 32px; height: 32px; }
+        .rain-rose:nth-child(29n+9) { animation-duration: 10s; animation-delay: 3.5s; opacity: 1; }
+        .rain-rose:nth-child(31n+10) { animation-duration: 7.2s; animation-delay: 0.8s; width: 26px; height: 26px; }
+
+
+        /* --- La Rosa Grande Animada --- */
+        .large-rose {
+            position: absolute;
+            top: 50%; /* Centrado vertical */
+            left: 50%; /* Centrado horizontal */
+            transform: translate(-50%, -50%); /* Ajuste para centrado exacto */
+            width: 200px; /* Tamaño de la rosa grande */
+            height: 200px;
+            background-image: url('https://www.svgrepo.com/show/398231/rose.svg'); /* URL de la imagen de la rosa */
+            background-size: contain;
+            background-repeat: no-repeat;
+            z-index: 2; /* Por encima de la lluvia */
+            animation: pulse-and-rotate 6s ease-in-out infinite; /* Animación de pulsar y rotar */
+            transform-origin: center; /* Asegura que la rotación y escala sean desde el centro */
+        }
+
+        /* --- Animación para la Rosa Grande (@keyframes) --- */
+        @keyframes pulse-and-rotate {
+            0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+            50% { transform: translate(-50%, -50%) scale(1.1) rotate(5deg); } /* Crece y rota un poco */
+            100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+        }
+
+        /* --- Estilo para el Botón de Permiso (iOS 13+) --- */
+        #permissionButton {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px 25px;
+            font-size: 1.2em;
+            cursor: pointer;
+            z-index: 10; /* Asegura que esté encima de todo */
+            background-color: #fff;
+            color: #f00;
+            border: 2px solid #f00;
+            border-radius: 5px;
+            display: none; /* Oculto por defecto, JS lo mostrará si es necesario */
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="rain-container">
+        <div class="rain-rose" style="left: 1%;"></div><div class="rain-rose" style="left: 2%;"></div>
+        <div class="rain-rose" style="left: 3%;"></div><div class="rain-rose" style="left: 4%;"></div>
+        <div class="rain-rose" style="left: 5%;"></div><div class="rain-rose" style="left: 6%;"></div>
+        <div class="rain-rose" style="left: 7%;"></div><div class="rain-rose" style="left: 8%;"></div>
+        <div class="rain-rose" style="left: 9%;"></div><div class="rain-rose" style="left: 10%;"></div>
+        <div class="rain-rose" style="left: 11%;"></div><div class="rain-rose" style="left: 12%;"></div>
+        <div class="rain-rose" style="left: 13%;"></div><div class="rain-rose" style="left: 14%;"></div>
+        <div class="rain-rose" style="left: 15%;"></div><div class="rain-rose" style="left: 16%;"></div>
+        <div class="rain-rose" style="left: 17%;"></div><div class="rain-rose" style="left: 18%;"></div>
+        <div class="rain-rose" style="left: 19%;"></div><div class="rain-rose" style="left: 20%;"></div>
+        <div class="rain-rose" style="left: 21%;"></div><div class="rain-rose" style="left: 22%;"></div>
+        <div class="rain-rose" style="left: 23%;"></div><div class="rain-rose" style="left: 24%;"></div>
+        <div class="rain-rose" style="left: 25%;"></div><div class="rain-rose" style="left: 26%;"></div>
+        <div class="rain-rose" style="left: 27%;"></div><div class="rain-rose" style="left: 28%;"></div>
+        <div class="rain-rose" style="left: 29%;"></div><div class="rain-rose" style="left: 30%;"></div>
+        <div class="rain-rose" style="left: 31%;"></div><div class="rain-rose" style="left: 32%;"></div>
+        <div class="rain-rose" style="left: 33%;"></div><div class="rain-rose" style="left: 34%;"></div>
+        <div class="rain-rose" style="left: 35%;"></div><div class="rain-rose" style="left: 36%;"></div>
+        <div class="rain-rose" style="left: 37%;"></div><div class="rain-rose" style="left: 38%;"></div>
+        <div class="rain-rose" style="left: 39%;"></div><div class="rain-rose" style="left: 40%;"></div>
+        <div class="rain-rose" style="left: 41%;"></div><div class="rain-rose" style="left: 42%;"></div>
+        <div class="rain-rose" style="left: 43%;"></div><div class="rain-rose" style="left: 44%;"></div>
+        <div class="rain-rose" style="left: 45%;"></div><div class="rain-rose" style="left: 46%;"></div>
+        <div class="rain-rose" style="left: 47%;"></div><div class="rain-rose" style="left: 48%;"></div>
+        <div class="rain-rose" style="left: 49%;"></div><div class="rain-rose" style="left: 50%;"></div>
+        <div class="rain-rose" style="left: 51%;"></div><div class="rain-rose" style="left: 52%;"></div>
+        <div class="rain-rose" style="left: 53%;"></div><div class="rain-rose" style="left: 54%;"></div>
+        <div class="rain-rose" style="left: 55%;"></div><div class="rain-rose" style="left: 56%;"></div>
+        <div class="rain-rose" style="left: 57%;"></div><div class="rain-rose" style="left: 58%;"></div>
+        <div class="rain-rose" style="left: 59%;"></div><div class="rain-rose" style="left: 60%;"></div>
+        <div class="rain-rose" style="left: 61%;"></div><div class="rain-rose" style="left: 62%;"></div>
+        <div class="rain-rose" style="left: 63%;"></div><div class="rain-rose" style="left: 64%;"></div>
+        <div class="rain-rose" style="left: 65%;"></div><div class="rain-rose" style="left: 66%;"></div>
+        <div class="rain-rose" style="left: 67%;"></div><div class="rain-rose" style="left: 68%;"></div>
+        <div class="rain-rose" style="left: 69%;"></div><div class="rain-rose" style="left: 70%;"></div>
+        <div class="rain-rose" style="left: 71%;"></div><div class="rain-rose" style="left: 72%;"></div>
+        <div class="rain-rose" style="left: 73%;"></div><div class="rain-rose" style="left: 74%;"></div>
+        <div class="rain-rose" style="left: 75%;"></div><div class="rain-rose" style="left: 76%;"></div>
+        <div class="rain-rose" style="left: 77%;"></div><div class="rain-rose" style="left: 78%;"></div>
+        <div class="rain-rose" style="left: 79%;"></div><div class="rain-rose" style="left: 80%;"></div>
+        <div class="rain-rose" style="left: 81%;"></div><div class="rain-rose" style="left: 82%;"></div>
+        <div class="rain-rose" style="left: 83%;"></div><div class="rain-rose" style="left: 84%;"></div>
+        <div class="rain-rose" style="left: 85%;"></div><div class="rain-rose" style="left: 86%;"></div>
+        <div class="rain-rose" style="left: 87%;"></div><div class="rain-rose" style="left: 88%;"></div>
+        <div class="rain-rose" style="left: 89%;"></div><div class="rain-rose" style="left: 90%;"></div>
+        <div class="rain-rose" style="left: 91%;"></div><div class="rain-rose" style="left: 92%;"></div>
+        <div class="rain-rose" style="left: 93%;"></div><div class="rain-rose" style="left: 94%;"></div>
+        <div class="rain-rose" style="left: 95%;"></div><div class="rain-rose" style="left: 96%;"></div>
+        <div class="rain-rose" style="left: 97%;"></div><div class="rain-rose" style="left: 98%;"></div>
+        <div class="rain-rose" style="left: 99%;"></div><div class="rain-rose" style="left: 100%;"></div>
+
+    </div>
+
+    <div class="large-rose"></div>
+
+    <button id="permissionButton">Habilitar movimiento con giroscopio</button>
+
+    <script>
+        // --- Código JavaScript para el control del giroscopio ---
+
+        // Selecciona todas las rosas que caen y el botón de permiso
+        const roses = document.querySelectorAll('.rain-rose');
+        const permissionButton = document.getElementById('permissionButton');
+
+        // Factor para controlar la sensibilidad del movimiento del giroscopio
+        // Ajusta este valor: un valor mayor hará que las rosas se muevan más con la misma inclinación
+        const movementSensitivity = 0.6; // Empieza con 0.6, puedes probar 1.0 o 0.3
+
+
+        /**
+         * Maneja el evento deviceorientation para mover las rosas.
+         * @param {DeviceOrientationEvent} event - El evento de orientación del dispositivo.
+         */
+        function handleOrientation(event) {
+            // event.gamma representa la inclinación de izquierda a derecha.
+            // Varía típicamente de -90 (izquierda) a 90 (derecha) grados.
+            const gamma = event.gamma;
+
+            // A veces, gamma puede ser null o undefined al principio
+            if (gamma === null || gamma === undefined) {
+                console.warn("Datos de gamma no disponibles.");
+                return;
+            }
+
+             // Algunos navegadores pueden reportar gamma fuera del rango -90/90 si el dispositivo
+            // está boca abajo o en ángulos extremos. Podemos ignorar esos valores o limitarlos.
+            // Limitemos gamma al rango [-90, 90]
+            const clampedGamma = Math.max(-90, Math.min(90, gamma));
+
+
+            // Normaliza gamma a un valor entre -1 y 1 (donde -1 es inclinación máxima izquierda, 1 máxima derecha)
+            const normalizedGamma = clampedGamma / 90;
+
+            // Calcula la traslación horizontal deseada.
+            // Multiplicamos el gamma normalizado por un factor de sensibilidad y una unidad (vh).
+            // Usar 'vh' (viewport height) asegura que el movimiento sea relativo al tamaño de la pantalla.
+            // Un valor de 100vh aquí significaría moverse hasta el 100% de la altura de la pantalla a cada lado,
+            // pero lo escalamos con movementSensitivity.
+            const translationVh = normalizedGamma * movementSensitivity * 100;
+
+
+            // Aplica la traslación horizontal a cada rosa.
+            // Usamos la variable CSS --gyro-translate-x para que el CSS maneje la combinación de transformaciones.
+            roses.forEach(rose => {
+                 rose.style.setProperty('--gyro-translate-x', translationVh + 'vh');
+            });
+        }
+
+        // --- Lógica para solicitar permiso de movimiento (Específico para iOS 13+) ---
+        // En Android Chrome, este permiso no es necesario y el listener se añade directamente.
+
+        // Comprueba si la API de orientación de dispositivo existe Y si necesita solicitar permiso
+        if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            // Estamos en un dispositivo iOS 13+ o superior que requiere permiso explícito
+
+            console.log("Dispositivo detectado: Requiere permiso para sensores.");
+            permissionButton.style.display = 'block'; // Muestra el botón al usuario
+
+            // Añade un escuchador al clic del botón para solicitar el permiso
+            permissionButton.addEventListener('click', () => {
+                DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            // Si el usuario otorga permiso:
+                            console.log("Permiso de giroscopio otorgado.");
+                            window.addEventListener('deviceorientation', handleOrientation); // Empieza a escuchar
+                            permissionButton.style.display = 'none'; // Oculta el botón
+                        } else {
+                            // Si el usuario deniega permiso:
+                            console.warn('Permiso para acceder a la orientación del dispositivo denegado.');
+                            permissionButton.textContent = 'Permiso Denegado'; // Cambia el texto del botón
+                            // Puedes deshabilitar el botón o dejarlo como está
+                            // permissionButton.disabled = true;
+                        }
+                    })
+                    .catch(error => {
+                         // Captura cualquier error durante el proceso de solicitud de permiso
+                         console.error('Error al solicitar permiso de giroscopio:', error);
+                         permissionButton.textContent = 'Error al solicitar permiso';
+                    });
+            });
+
+        } else {
+            // Estamos en otro tipo de dispositivo/navegador (Android, iOS antiguo, etc.)
+            // que no necesita la solicitud de permiso explícita con un botón.
+
+            console.log("Dispositivo detectado: No requiere solicitud de permiso explícita.");
+
+            // Verifica si el evento deviceorientation está disponible en general
+            if (window.DeviceOrientationEvent) {
+                 // Si el evento existe, simplemente empezamos a escuchar.
+                 // Recuerda que AUN ASÍ REQUIERE HTTPS para funcionar en Android Chrome.
+                 window.addEventListener('deviceorientation', handleOrientation);
+                 console.log("Eventos de orientación soportados. Escuchando...");
+            } else {
+                 // Si el evento ni siquiera existe en este navegador/dispositivo
+                 console.error('Eventos de orientación del dispositivo no soportados por este navegador.');
+                 // Informa al usuario o simplemente oculta el botón que no se usó
+                 permissionButton.textContent = 'Giroscopio no soportado';
+                 // Puedes deshabilitar o eliminar el botón si quieres
+                  permissionButton.style.display = 'block'; // Opcional: mostrar mensaje de no soportado
+                  // permissionButton.disabled = true;
+            }
+             // En este caso (no iOS 13+), ocultamos el botón si la API existe y empezamos a escuchar,
+             // o lo mostramos con un mensaje de error si la API no existe.
+             // Decidimos ocultarlo si la API existe y empezamos a escuchar directamente:
+             if (window.DeviceOrientationEvent) {
+                permissionButton.style.display = 'none';
+             }
+        }
+
+    </script>
+
+</body>
+</html>
